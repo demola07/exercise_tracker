@@ -19,7 +19,14 @@ app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html');
 });
 
-const user = [];
+const users = [];
+const exercises = [];
+
+const getUsernameById = (id) => {
+  users.find((user) => user._id === id).username;
+};
+
+const getExerciseFromUserById = (id) => exercises.filter((exe) => exe._id === id);
 
 app.post('/api/exercise/new-user', (req, res) => {
   const { username } = req.body;
@@ -28,12 +35,51 @@ app.post('/api/exercise/new-user', (req, res) => {
     username,
     _id: shortId.generate(),
   };
-  user.push(newUser);
+  users.push(newUser);
   return res.json(newUser);
 });
 
 app.get('/api/exercise/users', (req, res) => {
   res.json(users);
+});
+
+app.post('/api/exercise/add', (req, res) => {
+  const { userId, description, duration, date } = req.body;
+
+  const dateObj = date === '' ? new Date() : new Date(date);
+
+  const newExercise = {
+    _id: userId,
+    description,
+    duration: +duration,
+    date: dateObj,
+  };
+
+  res.json(newExercise);
+});
+
+app.get('/api/exercise/log', (req, res) => {
+  const { userId, from, to, limit } = req.query;
+
+  let log = getExerciseFromUserById(userId);
+
+  if (from) {
+    const fromDate = new Date(from);
+    log = log.filter((exe) => exe.date > new Date(fromDate));
+  }
+  if (to) {
+    const toDate = new Date(to);
+    log = log.filter((exe) => exe.date < new Date(toDate));
+  }
+
+  if (limit) log = log.splice(0, +limit);
+
+  res.json({
+    _id: userId,
+    username: getUsernameById(userId),
+    count: log.length,
+    log: log,
+  });
 });
 
 // Not found middleware
