@@ -22,9 +22,7 @@ app.get('/', (req, res) => {
 const users = [];
 const exercises = [];
 
-const getUsernameById = (id) => {
-  users.find((user) => user._id === id).username;
-};
+const getUsernameById = (id) => users.find((user) => user._id === id).username;
 
 const getExerciseFromUserById = (id) => exercises.filter((exe) => exe._id === id);
 
@@ -46,16 +44,23 @@ app.get('/api/exercise/users', (req, res) => {
 app.post('/api/exercise/add', (req, res) => {
   const { userId, description, duration, date } = req.body;
 
-  const dateObj = date === '' ? new Date() : new Date(date);
+  const dateObj = date == '' ? new Date() : new Date(date);
 
   const newExercise = {
     _id: userId,
-    description,
+    description: description,
     duration: +duration,
-    date: dateObj,
+    date: dateObj.toString().split(' ').slice(0, 4).join(' '),
   };
 
-  res.json(newExercise);
+  exercises.push(newExercise);
+  return res.json({
+    _id: userId,
+    description: description,
+    duration: +duration,
+    username: getUsernameById(userId),
+    date: dateObj.toString().split(' ').slice(0, 4).join(' '),
+  });
 });
 
 app.get('/api/exercise/log', (req, res) => {
@@ -65,14 +70,16 @@ app.get('/api/exercise/log', (req, res) => {
 
   if (from) {
     const fromDate = new Date(from);
-    log = log.filter((exe) => exe.date > new Date(fromDate));
+    log = log.filter((exe) => new Date(exe.date) >= fromDate);
   }
   if (to) {
     const toDate = new Date(to);
-    log = log.filter((exe) => exe.date < new Date(toDate));
+    log = log.filter((exe) => new Date(exe.date) <= toDate);
   }
 
-  if (limit) log = log.splice(0, +limit);
+  if (limit) {
+    log = log.slice(0, +limit);
+  }
 
   res.json({
     _id: userId,
